@@ -8,10 +8,14 @@
 #include <allegro5/allegro_font.h>
 #include <allegro5/allegro_ttf.h>
 
+#include <allegro5/allegro_audio.h>
+#include <allegro5/allegro_acodec.h>
+
+
 
 // program states 
 
-enum State {STATE_QUIT,  STATE_PAUSE, STATE_GAME , STATE_START_SCREEN, STATE_AFTER_GAME};
+enum State {STATE_QUIT,  STATE_PAUSE, STATE_GAME , STATE_START_SCREEN, STATE_AFTER_GAME, STATE_LEADERBOARD, STATE_SETTINGS};
 
 
 
@@ -31,6 +35,12 @@ ALLEGRO_FONT* font_tiles3;
 ALLEGRO_FONT* font_small_text;
 ALLEGRO_FONT* font_large_text;
 ALLEGRO_FONT* font_title_text;
+ALLEGRO_FONT* font_title1_text;
+
+ALLEGRO_SAMPLE* swish = NULL;
+ALLEGRO_SAMPLE* music = NULL;
+ALLEGRO_SAMPLE_INSTANCE* songinstance = NULL;
+
 
 void al_config();
 void clear_board(int board[][4]);
@@ -51,3 +61,7 @@ void previous_choice(int* current, int active_choice[]);
 
 void draw_after_game_screen(bool _did_win);
 void  draw_static_pause_screen();
+
+void draw_leaderboard(int* current);
+void draw_settings(int* current, bool* music, bool* sound_effects);
+void switch_on_off(bool* value);

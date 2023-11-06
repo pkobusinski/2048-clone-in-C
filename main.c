@@ -21,6 +21,15 @@ int main() {
     font_small_text = al_load_font("font2.ttf", 25, 0);
     font_large_text = al_load_font("font1.ttf", 55, 0);
     font_title_text = al_load_font("font1.ttf", 125, 0);
+    font_title1_text = al_load_font("font1.ttf", 75, 0);
+
+    swish = al_load_sample("slash.mp3");
+    music = al_load_sample("music.mp3");
+    al_reserve_samples(3);
+    songinstance = al_create_sample_instance(music);
+    al_set_sample_instance_playmode(songinstance, ALLEGRO_PLAYMODE_LOOP);
+    al_attach_sample_instance_to_mixer(songinstance, al_get_default_mixer());
+
 
     //al_set_window_title(display, "2048");
 
@@ -34,6 +43,9 @@ int main() {
 
     bool game_over = false;
     bool did_win = false;
+    bool music = true;
+    bool sound_effects = true;
+
     int active_choice[3] = { 1,2,3 };
     int current_option = active_choice[0];
 
@@ -51,6 +63,10 @@ int main() {
             switch (event.type)
             {
             case ALLEGRO_EVENT_TIMER:
+                if (music) al_play_sample_instance(songinstance);
+                else
+                    al_stop_sample_instance(songinstance);
+
                 redraw_board(&board);
                 draw_score();
 
@@ -65,17 +81,21 @@ int main() {
                 switch (event.keyboard.keycode)
                 {
                 case ALLEGRO_KEY_UP:
+                    if (sound_effects) al_play_sample(swish, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, 0);
                     move_up(&board);
                     break;
 
                 case ALLEGRO_KEY_DOWN:
+                    if (sound_effects) al_play_sample(swish, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, 0);
                     move_down(&board);
                     break;
 
                 case ALLEGRO_KEY_LEFT:
+                    if (sound_effects) al_play_sample(swish, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, 0);
                     move_left(&board);
                     break;
                 case ALLEGRO_KEY_RIGHT:
+                    if (sound_effects) al_play_sample(swish, 1.0, 0.0, 1.0, ALLEGRO_PLAYMODE_ONCE, 0);
                     move_right(&board);
                     break;
 
@@ -93,10 +113,64 @@ int main() {
                 break;
             }
             break;
+
+        case STATE_SETTINGS:
+            switch (event.type)
+            {
+            case ALLEGRO_EVENT_TIMER:
+                if (music) al_play_sample_instance(songinstance);
+                else
+                    al_stop_sample_instance(songinstance);
+
+                draw_settings(current_option, music, sound_effects);
+                break;
+
+            case ALLEGRO_EVENT_KEY_DOWN:
+
+                switch (event.keyboard.keycode)
+                {
+                case ALLEGRO_KEY_DOWN:
+                    next_choice(&current_option, active_choice);
+                    break;
+                case ALLEGRO_KEY_UP:
+                    previous_choice(&current_option, active_choice);
+                    break;
+
+                case ALLEGRO_KEY_ENTER:
+                    switch (current_option) {
+                    case 1:
+                        if (music == true)
+                            music = false;
+                        else if (music == false)
+                            music = true;
+                        break;
+                    case 2:
+                        if (sound_effects == true)
+                            sound_effects = false;
+                        else if (sound_effects == false)
+                            sound_effects = true;
+                        break;
+                    case 3:
+                        game_state = STATE_START_SCREEN;
+                        break;
+                    }
+                    break;
+                }
+                break;
+            case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                game_state = STATE_QUIT;
+                break;
+            }
+
+
+            break;
         case STATE_START_SCREEN:
             switch (event.type)
             {
             case ALLEGRO_EVENT_TIMER:
+                if (music) al_play_sample_instance(songinstance);
+                else
+                    al_stop_sample_instance(songinstance);
                 draw_start_screen(current_option);
                 break;
 
@@ -121,11 +195,12 @@ int main() {
                         draw_board(&board);
                         break;
                     case 2:
-                        //tutaj funkcja wywołująca leaderboard
+                        game_state = STATE_LEADERBOARD;
+                        
                         break;
                     case 3:
-                        // tutaj funkcja na opcje
-
+                        game_state = STATE_SETTINGS;
+                        //draw_settings(current_option);
                         break;
                     }
                     break;
@@ -146,19 +221,11 @@ int main() {
 
                 switch (event.keyboard.keycode)
                 {
-                case ALLEGRO_KEY_DOWN:
+                case ALLEGRO_KEY_ESCAPE:
                     game_state = STATE_START_SCREEN;
                     break;
 
-                case ALLEGRO_KEY_UP:
-                    game_state = STATE_GAME;
-                    clear_board(&board);
-                    score = 0;
-                    spawn_field(&board);
-                    draw_board(&board);
-                    break;
-                    
-                
+      
                 }
                 break;
             case ALLEGRO_EVENT_DISPLAY_CLOSE:
@@ -167,6 +234,32 @@ int main() {
             }
             break;
 
+        case STATE_LEADERBOARD:
+            switch (event.type)
+            {
+            case ALLEGRO_EVENT_TIMER:
+                if (music) al_play_sample_instance(songinstance);
+                else
+                    al_stop_sample_instance(songinstance);
+
+                draw_leaderboard(current_option);
+                break;
+
+            case ALLEGRO_EVENT_KEY_DOWN:
+
+                switch (event.keyboard.keycode)
+                {
+                case ALLEGRO_KEY_ENTER:
+                    game_state = STATE_START_SCREEN;
+                    break;
+                }
+                break;
+            case ALLEGRO_EVENT_DISPLAY_CLOSE:
+                game_state = STATE_QUIT;
+                break;
+            }
+
+            break;
         case STATE_PAUSE:
             switch (event.type)
             {
@@ -189,9 +282,8 @@ int main() {
                 break;
             }
             break;
+
         }
-
-
     }
     // zwolnienie zasobów Allegro
     al_destroy_display(display);
@@ -199,6 +291,7 @@ int main() {
     al_destroy_font(font_tiles1);
     al_destroy_font(font_tiles2);
     al_destroy_font(font_tiles3);
+    al_destroy_sample(swish);
 
     return 0;
 }
@@ -210,6 +303,8 @@ void al_config()
     if (!al_init_primitives_addon()) { fprintf(stderr, "Failed to initialize primitives addon.\n"); return 1; }
     if (!al_init_font_addon()) { fprintf(stderr, "Failed to initialize font addon.\n"); return 1; }
     if (!al_init_ttf_addon()) { fprintf(stderr, "Failed to initialize font ttf addon.\n"); return 1; }
+    if (!al_install_audio()) { fprintf(stderr, "Failed to initialize audio addon.\n"); return 1; }
+    al_init_acodec_addon();
 }
 
 
@@ -552,7 +647,7 @@ void draw_start_screen(int *current)
     al_draw_filled_rounded_rectangle(250, 150, 600, 250,10,10, (current == 1) ? al_map_rgb(118, 111, 101) : al_map_rgb(185, 173, 163));
     al_draw_text(font_tiles1, al_map_rgb(255,255,255), 425, 165, ALLEGRO_ALIGN_CENTER, "PLAY");
     al_draw_filled_rounded_rectangle(250, 275, 600, 375,10,10, (current == 2) ? al_map_rgb(118, 111, 101) : al_map_rgb(185, 173, 163));
-    al_draw_text(font_tiles1, al_map_rgb(255, 255, 255), 425, 290, ALLEGRO_ALIGN_CENTER, "LEADERBOARD");
+    al_draw_text(font_tiles1, al_map_rgb(255, 255, 255), 425, 290, ALLEGRO_ALIGN_CENTER, "INSTRUCTIONS");
     al_draw_filled_rounded_rectangle(250, 400, 600, 500,10,10, (current == 3) ? al_map_rgb(118, 111, 101) : al_map_rgb(185, 173, 163));
     al_draw_text(font_tiles1, al_map_rgb(255, 255, 255), 425, 415, ALLEGRO_ALIGN_CENTER, "OPTIONS");
 
@@ -600,10 +695,38 @@ void clear_board(int board[][4]) {
         }
 }
 
-void  draw_static_pause_screen() {
+void draw_static_pause_screen() {
     al_set_blender(ALLEGRO_ADD, ALLEGRO_ONE, ALLEGRO_INVERSE_ALPHA);
     al_draw_filled_rounded_rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 10, 10, al_map_rgba(185, 173, 163, 190));
     al_draw_text(font_large_text, al_map_rgb(118, 111, 101), 425, 200, ALLEGRO_ALIGN_CENTER, "GAME PAUSED");
     al_flip_display();
-
 }
+
+void draw_leaderboard(int* current) {
+
+    al_draw_filled_rounded_rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 10, 10, al_map_rgb(251, 248, 246));
+    al_draw_text(font_title1_text, al_map_rgb(118, 111, 101), 425, 25, ALLEGRO_ALIGN_CENTER, "INSTRUCTIONS");
+    al_draw_text(font_tiles1, al_map_rgb(118, 111, 101), 425, 170, ALLEGRO_ALIGN_CENTER, "Use your arrow keys to move the");
+    al_draw_text(font_tiles1, al_map_rgb(118, 111, 101), 425, 235, ALLEGRO_ALIGN_CENTER, "tiles. Tiles with the same number");
+    al_draw_text(font_tiles1, al_map_rgb(118, 111, 101), 425, 300, ALLEGRO_ALIGN_CENTER, "merge into one when they touch.");
+    al_draw_text(font_tiles1, al_map_rgb(118, 111, 101), 425, 365, ALLEGRO_ALIGN_CENTER, "Add them up to reach 2048!");
+    al_draw_filled_rounded_rectangle(250, 490, 600, 540, 10, 10, al_map_rgb(118, 111, 101));
+    al_draw_text(font_tiles1, al_map_rgb(255, 255, 255), 425, 480, ALLEGRO_ALIGN_CENTER, "EXIT");
+
+    al_flip_display();
+}
+
+void draw_settings(int *current, bool *music, bool *sound_effects) {
+
+    al_draw_filled_rounded_rectangle(0, 0, SCREEN_WIDTH, SCREEN_HEIGHT, 10, 10, al_map_rgb(251, 248, 246));
+    al_draw_text(font_title1_text, al_map_rgb(118, 111, 101), 425, 30, ALLEGRO_ALIGN_CENTER, "OPTIONS");
+    al_draw_filled_rounded_rectangle(250, 150, 600, 250, 10, 10, (current == 1) ? al_map_rgb(118, 111, 101) : al_map_rgb(185, 173, 163));
+    al_draw_text(font_tiles3, (music == true) ? al_map_rgb(0, 255, 0): al_map_rgb(255, 0, 0), 425, 175, ALLEGRO_ALIGN_CENTER, "MUSIC");
+    al_draw_filled_rounded_rectangle(250, 275, 600, 375, 10, 10, (current == 2) ? al_map_rgb(118, 111, 101) : al_map_rgb(185, 173, 163));
+    al_draw_text(font_tiles3, (sound_effects == true) ? al_map_rgb(0, 255, 0) : al_map_rgb(255, 0, 0), 425, 300, ALLEGRO_ALIGN_CENTER, "SOUND EFFECTS");
+    al_draw_filled_rounded_rectangle(250, 400, 600, 500, 10, 10, (current == 3) ? al_map_rgb(118, 111, 101) : al_map_rgb(185, 173, 163));
+    al_draw_text(font_tiles3, al_map_rgb(255, 255, 255), 425, 425, ALLEGRO_ALIGN_CENTER, "EXIT");
+
+    al_flip_display();
+}
+
